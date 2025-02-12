@@ -1,6 +1,8 @@
 
 #include "utils.h"
 
+#include <ctype.h>
+
 Token* create_token(TokenType type, const char* value, size_t ln, size_t col) {
     Token* token = (Token*)malloc(sizeof(Token));
     token->type = type;
@@ -9,6 +11,47 @@ Token* create_token(TokenType type, const char* value, size_t ln, size_t col) {
     token->col = col;
     
     return token;
+}
+
+void print_token(Token* token) {
+    printf("[");
+    print_token_type(token);
+    printf(", %s]\n", token->value);
+}
+
+void print_token_type(Token* token) {
+    switch (token->type) {
+        case IDENTIFIER:
+            printf("IDENTIFIER");
+            break;
+        case STRING:
+            printf("STRING");
+            break;
+        case CHAR:
+            printf("CHAR");
+            break;
+        case NUMBER:
+            printf("NUMBER");
+            break;
+        default:
+            printf("%s", to_upper(token->value));
+            break;
+    }
+}
+
+char* to_upper(const char* c) {
+    if (!c) return NULL;
+
+    size_t len = 0;
+    while (c[len] != '\0') len++;
+
+    char* upper = (char*)malloc(len + 1);
+    if (!upper) return NULL;
+
+    for (size_t i = 0; i < len; i++) upper[i] = toupper((unsigned char)c[i]);
+
+    upper[len] = '\0';
+    return upper;
 }
 
 char* location(Token* token) {
@@ -36,9 +79,9 @@ char* concat(const char* source, size_t start, size_t end) {
 }
 
 unsigned int hash_function(const char* key) {
-    unsigned int hash = 0;
+    unsigned int hash = 5381;
     while (*key) {
-        hash = (hash * 31) + *key++;
+        hash = ((hash << 5) + hash) + (unsigned char)(*key++); // hash * 33 + key[i]
     }
     return hash % HASH_TABLE_SIZE;
 }
@@ -56,27 +99,93 @@ void hash_insert(HashMap* map, const char* key, TokenType value) {
     HashEntry* entry = (HashEntry*)malloc(sizeof(HashEntry)); 
     entry->key = strdup(key);
     entry->value = value;
-    map->entries[index] = entry;
+    entry->next = NULL;
+
+    if (map->entries[index] == NULL) {
+        map->entries[index] = entry;
+    } else {
+        entry->next = map->entries[index];
+        map->entries[index] = entry;
+    }
 }
 
 TokenType hash_get(HashMap* map, const char* key, int* found) {
     unsigned int index = hash_function(key);
-    if (map->entries[index] != NULL && strcmp(map->entries[index]->key, key) == 0) {
-        *found = 1;
-        return map->entries[index]->value;
+    HashEntry* entry = map->entries[index];
+
+    while (entry) {
+        if (strcmp(entry->key, key) == 0) {
+            *found = 1;
+            return entry->value;
+        }
+
+        entry = entry->next;
     }
+
     *found = 0;
     return END_OF_FILE;
 }
 
 void free_hash_map(HashMap* map) {
     for (int i = 0; i < HASH_TABLE_SIZE; i++) {
-        if (map->entries[i]) {
-            free(map->entries[i]->key);
-            free(map->entries[i]);
+        HashEntry* entry = map->entries[i];
+        while (entry) {
+            HashEntry* tmp = entry;
+            entry = entry->next;
+            free(tmp->key);
+            free(tmp);
         }
     }
     free(map);
+}
+
+SymbolTable* create_symbol_table() {
+    SymbolTable* table = (SymbolTable*)malloc(sizeof(SymbolTable));
+    if (!table) {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(1);
+    }
+    memset(table->table, 0, sizeof(table->table));
+    return table;
+}
+
+void symbol_insert(SymbolTable* table, const char* type_name) {
+    unsigned int index = hash_function(type_name);
+    TypeEntry* new_entry = (TypeEntry*)malloc(sizeof(TypeEntry));
+    if (!new_entry) {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(1);
+    }
+    new_entry->name = strdup(type_name);
+    new_entry->next = table->table[index];
+    table->table[index] = new_entry;
+}
+
+int symbol_lookup(SymbolTable* table, const char* type_name) {
+    unsigned int index = hash_function(type_name);
+    TypeEntry* entry = table->table[index];
+
+    while (entry) {
+        if (strcmp(entry->name, type_name) == 0) {
+            return 1;
+        }
+        entry = entry->next;
+    }
+
+    return 0;
+}
+
+void free_symbol_table(SymbolTable* table) {
+    for (int i = 0; i < SYMBOL_TABLE_SIZE; i++) {
+        TypeEntry* entry = table->table[i];
+        while (entry) {
+            TypeEntry* tmp = entry;
+            entry = entry->next;
+            free(tmp->name);
+            free(tmp);
+        }
+    }
+    free(table);
 }
 
 TokenArray create_token_array(int capacity) {

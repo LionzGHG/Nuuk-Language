@@ -2,12 +2,13 @@
 #ifndef NUUK_PARSER_H
 #define NUUK_PARSER_H
 
-#include "E:\THE_LANGUAGE\cstrap\parser\ast.h"
+#include "E:\THE_LANGUAGE\src\parser\ast.h"
 #include <stdarg.h>
 #include <stdbool.h>
 
 typedef struct Parser {
     TokenArray* tokens;
+    SymbolTable* datatypes;
     size_t current;
 } Parser;
 
@@ -32,6 +33,9 @@ Stmt* return_stmt(Parser* self);
 Stmt* import_stmt(Parser* self);
 Stmt* expand_stmt(Parser* self);
 Stmt* use_stmt(Parser* self);
+Stmt* variable_decl(Parser* self);
+
+Datatype* datatype(Parser* parser, Token* token);
 
 Expr* expression(Parser* self);
 Expr* assignment(Parser* self);

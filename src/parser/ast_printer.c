@@ -1,14 +1,17 @@
 
-#include "E:\THE_LANGUAGE\cstrap\parser\ast_printer.h"
+#include "E:\THE_LANGUAGE\src\parser\ast_printer.h"
 
 void dprint_stmt(Stmt* stmt) {
     switch (stmt->type) {
         case STMT_EXPRESSION:
-            printf("STMT_EXPRESSION\n");
+            Expr* expr = ((Expression*)stmt)->expr;
+            printf("STMT_EXPRESSION(");
+            dprint_expr(expr);
+            printf(");\n");
             break;
         case STMT_RETURN:
             printf("STMT_RETURN(");
-            Expr* expr = ((Return*)stmt)->value;
+            expr = ((Return*)stmt)->value;
             dprint_expr(expr);
             printf(");\n");
             break;
@@ -16,18 +19,58 @@ void dprint_stmt(Stmt* stmt) {
             printf("STMT_BLOCK\n");
             break;
         case STMT_IMPORT:
-            printf("STMT_IMPORT\n");
+            printf("STMT_IMPORT(");
+            expr = ((Import*)stmt)->value;
+            dprint_expr(expr);
+            printf(");\n");
             break;
         case STMT_USE:
-            printf("STMT_USE\n");
+            printf("STMT_USE(");
+            expr = ((Use*)stmt)->value;
+            dprint_expr(expr);
+            printf(");\n");
             break;
         case STMT_EXPAND:
-            printf("STMT_EXPAND\n");
+            printf("STMT_EXPAND(");
+            expr = ((Expand*)stmt)->value;
+            dprint_expr(expr);
+            printf(");\n");
+            break;
+        case STMT_VAR:
+            VariableDecl* var = (VariableDecl*)stmt;
+            printf("STMT_VAR(");
+            printf(var->mutability ? "MUTABLE, " : "CONSTANT, ");
+            dprint_typeid(var->type);
+            printf(", %s, ", var->name->value);
+            if (var->value != NULL) dprint_expr(var->value);
+            else printf("NULL");
+            printf(");\n");
             break;
         default:
             printf("STMT_UNKOWN\n");
             break;
     }
+}
+
+void dprint_typeid(Datatype* type) {
+    switch (type->type) {
+        case TYPEID_BASIC:
+            BasicType* basic = (BasicType*)type;
+            if (!basic->name) { 
+                fprintf(stderr, "ERROR: BasicType has no name\n");
+                exit(1);
+            }
+            printf("%s", basic->name);
+            break;
+        case TYPEID_POINTER:
+            Pointer* inner = (Pointer*)type;
+            dprint_typeid(inner->type);
+            printf("*");
+            break;
+        default:
+            printf("TYPEID_UNKOWN\n");
+            return;
+    } 
 }
 
 void dprint_expr(Expr* expr) {
@@ -40,12 +83,22 @@ void dprint_expr(Expr* expr) {
             Literal* literal = (Literal*)expr;
             printf("EXPR_LITERAL %s", literal->value);
             break;
+        case EXPR_VARIABLE:
+            Variable* variable = (Variable*)expr;
+            printf("EXPR_VARIABLE %s", variable->name.value);
+            break;
         case EXPR_BINARY:
             Binary* binary = (Binary*)expr;
             printf("EXPR_BINARY(");
             dprint_expr(binary->lhs);
             printf(" %s ", binary->op.value);
             dprint_expr(binary->rhs);
+            printf(")");
+            break;
+        case EXPR_UNARY:
+            Unary* unary = (Unary*)expr;
+            printf("EXPR_UNARY(%s, ", unary->op.value);
+            dprint_expr(unary->rhs);
             printf(")");
             break;
         default:

@@ -1,7 +1,7 @@
 #ifndef NUUK_LEXER_H
 #define NUUK_LEXER_H
 
-#include "E:\THE_LANGUAGE\cstrap\utils\utils.h"
+#include "E:\THE_LANGUAGE\src\utils\utils.h"
 #include <stdbool.h>
 
 typedef struct Lexer {

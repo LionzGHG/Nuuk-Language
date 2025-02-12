@@ -2,7 +2,7 @@
 #ifndef NUUK_AST_PRINTER_H
 #define NUUK_AST_PRINTER_H
 
-#include "E:\THE_LANGUAGE\cstrap\parser\parser.h"
+#include "E:\THE_LANGUAGE\src\parser\parser.h"
 
 Visitor* create_ast_printer();
 const char* print_expr(Visitor* self, Expr* expr);
@@ -12,6 +12,7 @@ void destroy_ast_printer(Visitor* visitor);
 
 void dprint_stmt(Stmt* stmt);
 void dprint_expr(Expr* expr);
+void dprint_typeid(Datatype* type);
 
 // Vistor-Pattern
 const char* visit_binary(Visitor* self, Binary* binary);

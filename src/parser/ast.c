@@ -82,6 +82,59 @@ const char* id(Stmt* stmt) {
     }
 }
 
+Datatype* basic_type(const char* name) {
+    BasicType* basic_type = (BasicType*)malloc(sizeof(BasicType));
+    if (!basic_type) {
+        fprintf(stderr, "ERROR: Failed to allocate memory for BasicType!\n");
+        exit(1);
+    }
+    basic_type->base.type = TYPEID_BASIC;
+    basic_type->name = strdup(name);
+
+    return (Datatype*)basic_type;
+}
+
+Datatype* pointer(Datatype* type) {
+    Pointer* ptr = (Pointer*)malloc(sizeof(Pointer));
+    ptr->base.type = TYPEID_POINTER;
+    ptr->type = type;
+
+    return (Datatype*)ptr;
+}
+
+Datatype* generic(Datatype* type) {
+    fprintf(stderr, "TODO\n");
+    exit(1);
+}
+
+Datatype* array(size_t array_size, Datatype** types) {
+    Array* array = (Array*)malloc(sizeof(Array));
+    array->base.type = TYPEID_ARRAY;
+    array->array_size = array_size;
+    array->types = types;
+
+    return (Datatype*)array;
+}
+
+Datatype* tuple(Datatype** types) {
+    Tuple* tuple = (Tuple*)malloc(sizeof(Tuple));
+    tuple->base.type = TYPEID_TUPLE;
+    tuple->types = types;
+
+    return (Datatype*)tuple;
+}
+
+VariableDecl* create_variable_stmt(bool mutability, Datatype* type, Token* name, Expr* value) {
+    VariableDecl* var = (VariableDecl*)malloc(sizeof(VariableDecl));
+    var->base.type = STMT_VAR;
+    var->mutability = mutability;
+    var->type = type;
+    var->name = name;
+    var->value = value;
+
+    return var;
+}
+
 Binary* create_binary(Expr* lhs, Token op, Expr* rhs) {
     Binary* binary = (Binary*)malloc(sizeof(Binary));
     binary->base.type = EXPR_BINARY;

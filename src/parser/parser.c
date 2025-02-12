@@ -1,9 +1,22 @@
 
-#include "E:\THE_LANGUAGE\cstrap\parser\parser.h"
+#include "E:\THE_LANGUAGE\src\parser\parser.h"
 
 Parser* create_parser(TokenArray* tokens) {
     Parser* parser = (Parser*)malloc(sizeof(Parser));
     parser->tokens = tokens;
+    
+    SymbolTable* table = create_symbol_table();
+    symbol_insert(table, "int");
+    symbol_insert(table, "float");
+    symbol_insert(table, "double");
+    symbol_insert(table, "bool");
+    symbol_insert(table, "char");
+    symbol_insert(table, "usize");
+    symbol_insert(table, "isize");
+    symbol_insert(table, "uint");
+
+    parser->datatypes = table;
+
     parser->current = 0;
     return parser;
 }
@@ -17,7 +30,7 @@ StmtArray parse(Parser* self) {
             exit(1);
         }
         stmt_array_add(&stmts, stmt);
-        parser_next(self);
+        //parser_next(self);
     }
 
     printf("Parser finished!\n");
@@ -87,8 +100,41 @@ Token* parser_consume(Parser* self, TokenType type, const char* msg) {
 
 Stmt* declaration(Parser* self) {
     // TODO: variable declarations, ...
+    if (parser_check(self, CONST) || symbol_lookup(self->datatypes, parser_current(self)->value)) {
+        return variable_decl(self);
+    }
     
     return statement(self);
+}
+
+Stmt* variable_decl(Parser* self) {
+    bool mutability = false;
+    if (parser_current(self)->type == CONST) {
+        mutability = true;
+        parser_next(self);
+    }
+
+    if (!symbol_lookup(self->datatypes, parser_current(self)->value)) {
+        fprintf(stderr, "%s ERROR: Invalid Datatype '%s'. Expected variable declaration after 'const'.\n", location(parser_current(self)), parser_current(self)->value);
+        exit(1);
+    } else {
+        Datatype* type = datatype(self, parser_current(self));
+        parser_next(self);
+        Token* name = parser_consume(self, IDENTIFIER, "Expected identifier after variable declaration.\n");
+
+        if (parser_current(self)->type != ASSIGN) {
+            parser_consume(self, SEMICOLON, "Expected ';' after variable declaration.\n");
+            return (Stmt*)create_variable_stmt(mutability, type, name, NULL);
+        } else {
+            parser_consume(self, ASSIGN, "Expected '=' after variable declaration.\n");
+            Expr* value = expression(self);
+            parser_consume(self, SEMICOLON, "Expected ';' after variable declaration.\n");
+            return (Stmt*)create_variable_stmt(mutability, type, name, value);
+        }
+    }
+
+    fprintf(stderr, "%s ERROR: Invalid token while parsing variable declaration: '%s'.\n", location(parser_current(self)), parser_current(self)->value);
+    exit(1);
 }
 
 Stmt* statement(Parser* self) {
@@ -98,7 +144,8 @@ Stmt* statement(Parser* self) {
     printf("parsing: %s\n", parser_current(self)->value);
 
     // TODO: for, while, return, ...
-    if (strcmp(parser_current(self)->value, "return") == 0) {
+
+    if (parser_check(self, RETURN)) {
         printf("parsing return!!!\n");
         return return_stmt(self);
     }
@@ -117,6 +164,8 @@ Stmt* statement(Parser* self) {
 
     return expression_stmt(self);
 }
+
+
 
 Stmt* return_stmt(Parser* self) {
     parser_next(self);
@@ -344,4 +393,20 @@ Expr* call(Parser* self, Expr* callee) {
 
     parser_consume(self, RPAREN, "Expected ')' after function arguments.");
     return (Expr*)create_call(callee, args);
+}
+
+Datatype* datatype(Parser* parser, Token* token) {
+    if (!symbol_lookup(parser->datatypes, token->value)) {
+        fprintf(stderr, "%s ERROR: Invalid Datatype '%s'!\n", location(parser_current(parser)), token->value);
+        exit(EXIT_FAILURE);
+    }
+
+    Datatype* base = basic_type(token->value);
+
+    while (parser_peek(parser, 1)->type == STAR) {
+        parser_next(parser);
+        base = pointer(base);
+    }
+
+    return base;
 }

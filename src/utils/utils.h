@@ -6,7 +6,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#define HASH_TABLE_SIZE 40
+#define HASH_TABLE_SIZE 128
+#define SYMBOL_TABLE_SIZE 128
 
 #define MAP(...) ({ \
     HashMap map = { .size = 0 }; \
@@ -40,11 +41,21 @@ typedef enum TokenType {
 typedef struct HashEntry {
     char* key;
     TokenType value;
+    struct HashEntry* next;
 } HashEntry;
 
 typedef struct HashMap {
     HashEntry* entries[HASH_TABLE_SIZE];
 } HashMap;
+
+typedef struct TypeEntry {
+    char* name;
+    struct TypeEntry* next;
+} TypeEntry;
+
+typedef struct SymbolTable {
+    TypeEntry* table[SYMBOL_TABLE_SIZE];
+} SymbolTable;
 
 typedef struct Token {
     TokenType type;
@@ -61,6 +72,10 @@ typedef struct TokenArray {
 
 Token* create_token(TokenType type, const char* value, size_t ln, size_t col);
 
+void print_token(Token* token);
+void print_token_type(Token* token);
+char* to_upper(const char* c);
+
 char* location(Token* token);
 
 char* concat(const char* source, size_t start, size_t end);
@@ -75,6 +90,11 @@ HashMap* create_hash_map();
 void hash_insert(HashMap* map, const char* key, TokenType value);
 TokenType hash_get(HashMap* map, const char* key, int* found);
 void free_hash_map(HashMap* map);
+
+SymbolTable* create_symbol_table();
+void symbol_insert(SymbolTable* table, const char* type_name);
+int symbol_lookup(SymbolTable* table, const char* type_name);
+void free_symbol_table(SymbolTable* table);
 
 HashMap* map_keywords();
 

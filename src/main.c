@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "E:\THE_LANGUAGE\cstrap\lexer\lexer.h"
-#include "E:\THE_LANGUAGE\cstrap\parser\parser.h"
-#include "E:\THE_LANGUAGE\cstrap\parser\ast_printer.h"
+#include "E:\THE_LANGUAGE\src\lexer\lexer.h"
+#include "E:\THE_LANGUAGE\src\parser\parser.h"
+#include "E:\THE_LANGUAGE\src\parser\ast_printer.h"
 
 void eval(char* source);
 void repl();
@@ -35,7 +35,7 @@ void eval(char* source) {
     TokenArray* tokens = tokenize(lexer);
 
     for (int i = 0; i < tokens->size; i++) {
-        printf("%s\n", tokens->elements[i].value);
+        print_token(token_array_get(tokens, i));
     }
 
     Parser* parser = create_parser(tokens);

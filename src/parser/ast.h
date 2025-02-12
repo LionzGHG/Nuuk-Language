@@ -2,7 +2,8 @@
 #ifndef NUUK_AST_H
 #define NUUK_AST_H
 
-#include "E:\THE_LANGUAGE\cstrap\utils\utils.h"
+#include "E:\THE_LANGUAGE\src\utils\utils.h"
+#include <stdbool.h>
 
 typedef struct Visitor Visitor;
 typedef struct Expr Expr;
@@ -10,6 +11,12 @@ typedef struct Stmt Stmt;
 
 typedef enum StmtType StmtType;
 typedef enum ExprType ExprType;
+
+typedef struct BasicType BasicType;
+typedef struct Pointer Pointer;
+typedef struct Generic Generic;
+typedef struct Array Array;
+typedef struct Tuple Tuple;
 
 typedef struct Binary Binary;
 typedef struct Grouping Grouping;
@@ -56,6 +63,7 @@ typedef enum StmtType {
     STMT_EXPAND,
     STMT_RETURN,
     STMT_USE,
+    STMT_VAR,
 } StmtType;
 
 typedef enum ExprType {
@@ -70,6 +78,16 @@ typedef enum ExprType {
     EXPR_CALL
 } ExprType;
 
+typedef enum Typeid {
+    TYPEID_BASIC,
+    TYPEID_POINTER,
+    TYPEID_SHARED_POINTER,
+    TYPEID_UNIQUE_POINTER,
+    TYPEID_GENERIC,
+    TYPEID_ARRAY,
+    TYPEID_TUPLE
+} Typeid;
+
 typedef struct Expr {
     ExprType type;
     const char* (*accept)(struct Expr* self, Visitor* visitor);
@@ -79,6 +97,40 @@ typedef struct Stmt {
     StmtType type;
     void (*accept)(struct Stmt* self, Visitor* visitor);
 } Stmt;
+
+typedef struct Datatype {
+    Typeid type;
+} Datatype;
+
+// ################################################################
+// # DATATYPES
+// ################################################################
+
+typedef struct BasicType {
+    Datatype base;
+    const char* name;
+} BasicType;
+
+typedef struct Pointer {
+    Datatype base;
+    Datatype* type;
+} Pointer;
+
+typedef struct Generic {
+    Datatype base;
+    Datatype* type;
+} Generic;
+
+typedef struct Array {
+    Datatype base;
+    size_t array_size;
+    Datatype** types;
+} Array;
+
+typedef struct Tuple {
+    Datatype base;
+    Datatype** types;
+} Tuple;
 
 // ################################################################
 // # EXPRESSIONS
@@ -183,6 +235,14 @@ typedef struct Use {
     Expr* value;
 } Use;
 
+typedef struct VariableDecl {
+    Stmt base;
+    bool mutability;
+    Datatype* type;
+    Token* name;
+    Expr* value;
+} VariableDecl;
+
 // ################################################################
 // # FUNC DEFS
 // ################################################################
@@ -196,6 +256,14 @@ void expr_array_add(ExprArray* array, Expr* expr);
 void free_expr_array(ExprArray* array);
 
 const char* id(Stmt* stmt);
+
+Datatype* basic_type(const char* name);
+Datatype* pointer(Datatype* type);
+Datatype* generic(Datatype* type);
+Datatype* array(size_t array_size, Datatype** types);
+Datatype* tuple(Datatype** types);
+
+VariableDecl* create_variable_stmt(bool mutability, Datatype* type, Token* name, Expr* value);
 
 Binary* create_binary(Expr* lhs, Token op, Expr* rhs);
 Grouping* create_grouping(Expr* expr);
@@ -230,5 +298,6 @@ void return_accept(Stmt* return_stmt, Visitor* visitor);
 void import_accept(Stmt* import_stmt, Visitor* visitor);
 void expand_accept(Stmt* expand_stmt, Visitor* visitor);
 void use_accept(Stmt* use_stmt, Visitor* visitor);
+
 
 #endif

@@ -1,2 +1,5 @@
 
-return 10 + 20;
+int x = 10;
+int x;
+int*** x = &10;
+const int x = 250 * 3 / (10 + 2);
